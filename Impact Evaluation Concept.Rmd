@@ -1,0 +1,48 @@
+---
+title: "Impact Evaluation Concept"
+author: "Simone, Gavi, Jeremy"
+date: "5/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+EVALUATE A PROGRAM 
+Write a concept note for a feasible random evaluation.
+Need to talk about how the IE will help the orginization. 
+Sketch out impact eval for real program. 
+Program that is applied repeatedly to get a certain outcome.
+
+1. Treatment: What is the treatment to be randomly assigned? How does the treatment correspond to a broader class of interventions?
+(1-2 paragraphs) Talk about the treatment. What is it an example of. What is the actuall intervention? How is it different/same as other programs of the same class ie would you be able to generalize this program. 
+
+2. Sample: How will you draw your sample and how does it correspond to the population of interest?
+(Single paragraph) Describe all of the units in your study? Sample 
+
+3. Randomization: How will you assign treatment?
+(2-3 sentences) Simple randomization. Half assigned half not. Maybe want to to do cluster evcaluation. 
+
+4. Outcome Measurement: What is the primary outcome for your impact evaluation? How will you measure it?
+(1 paragraph) What is the exact measure to be taken? Need to understand the outcome to understand the likely impact of that program. example: the total average water use by each household.
+
+5. Power: does a power analysis (in code) indicate that you will have sufficient power to detect a reasonable treatment effect? Consider all elements of power:
+a. Sample size
+b. Treatment effect
+c. Variability of outcome 
+d. Test statistic
+Look at power code and lecture. What is the power for different effects? Core result: Statemnt of the minimal detectable effect for a certain sample size. 
+
+6. Contingencies
+a. Attrition: How will you handle attrition in your analysis?
+b. Non-compliance: How will you handle non-compliance in your analysis? 
+c. Interference: How will you handle interference in your analysis?(Conceptual not code)
+	(1 paragraph) Attrition
+	(1 paragraph) Non-compliance
+	(1 paragraph) Interference 
+
+7. Mechanisms: what strategies will your evaluation use to learn about when and why the treatment impacts the primary outcome of interest?
+(Conceptual) If it works, how will it work? What are the mechanisms? Example: water conservation maybe use a survey to get peoples knwoledge of water conservation and how the will effect 
+
+
+
