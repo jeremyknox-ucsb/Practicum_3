@@ -1,0 +1,160 @@
+---
+title: "prcticum 3"
+author: "Simone Albuquerque"
+date: "May 30, 2020"
+output: html_document
+---
+
+```{r load, echo=TRUE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("DeclareDesign")
+#install.packages("truncnorm")
+library(DeclareDesign)
+library(truncnorm) #for truncated distribution
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+```
+##declare_population()
+
+This functions allows you to declare the characteristics of the population that you want to study.
+
+Population: City of Richmond low-income households viable for solar installation (3,000 households) 
+- Treatment effect will be change in kw hour usage 
+
+```{r population, echo=TRUE}
+set.seed(228)
+population <- declare_population(
+  housholds = add_level(N=3000, 
+    kw_h=runif(n=N, min=600, max=13200), 
+    u=rnorm(n=N, mean=10972, sd=0.1))
+)
+#and a different amount of variability in that KW hour usage throughout California(the variable 'u')
+```
+
+##Population descriptives
+
+```{r population-see, echo=TRUE, fig.height=5.5}
+pop <- population()
+hist(pop[,2], xlab="baseline_kw_h", 
+     main="Baseline Annual Kilowatt Usage/hour", cex=24)
+```
+##declare_potential_outcomes()
+
+The next step is to declare the full schedule of potential outcomes $Y(1)$ and $Y(0)$ under an assumption about the effect size of interest.
+
+- We expect KW/H usage to decrease by 1642kWh per year ha in the treatment group and 658 the control group.
+
+```{r po, echo=TRUE}
+potential_outcomes <- 
+  declare_potential_outcomes(
+    Y_D_0= kw_h + u,
+    Y_D_1=kw_h + u + 984)
+
+#PH: we are proposing that the unit-level treatment effect is a +984 (or 1642 - 658) kW/h usage/year.
+```
+
+##Potential outcomes descriptives
+
+```{r po-see, echo=TRUE}
+po <- potential_outcomes(pop)
+kable(po[1:5,], digits=1)
+
+#PH: spot check that our definition of the unit-level treatment effect is true (subtract column 4 from column 5).
+```
+
+##declare_sampling()
+
+Next, we want to select the sample size. Let's start with 1000 households (the actual study installed solar in 15,724 households across california and 3000 are eligible & suitable for solar in Richmond)
+
+```{r sample, echo=TRUE}
+sampling <- declare_sampling(n=1000) #n = 1000
+sam <- sampling(po)
+kable(sam[1:5,c(1:2,4:6)], row.names = FALSE,
+      digits = 1)
+```
+
+##declare_assignment()
+
+This step declares the random assignment process. There are many complexities, but let's stick to *complete assignment* of exactly half the units at this stage.
+
+
+```{r assign, echo=TRUE}
+assigning <- declare_assignment(m = nrow(sam)/2,# number of rows of our sam
+                  assignment_variable="D")
+assigned <- assigning(sam) # keep the results
+
+kable(assigned[1:5,c(1:2,4:5,7:8)], 
+      digits = 1)
+
+#PH: alright, now we're using DeclareDesign to randomly assign villages to treatment and control with a probability of 0.5. The variable 'm' denotes the number of units that declare_assignment() should place in each treatment condition, which we are asking to be equal to half of the sample per treatment condition (nrow(sam)/2).
+
+```
+
+## Assessing balance
+
+At this stage, it's possible to look at balance in the baseline tree cover characteristics, since random assignment has occured.
+
+```{r violin, echo=FALSE, fig.height=6}
+ggplot(data=assigned, aes(x=as.factor(D), y=kw_h)) +
+geom_violin(aes(fill=as.factor(D), color=as.factor(D))) +
+theme_minimal(base_size = 24) + xlab("Assignment")
+
+#PH: recall that random assignment should, in expectation, produce treatment and control groups that are statistically-identical on all observed and unobserved features.
+```
+
+##declare_reveal()
+
+This step declares how the potential outcomes are revealed by the random assignment
+
+```{r reveal, echo=TRUE}
+revealing <- declare_reveal(assignment_variables=D) # the book of revelations
+
+#PH: this part of DeclareDesign essentially is telling R which PO to reveal for each unit as a function of its treatment assignment. Recall that we calculated the full schedule of potential outcomes for each unit above.
+```
+##declare_estimand()
+
+At this stage, we specify our target *estimand*, which is the quantity that we are trying to recover when estimating impact. Recall that we set this value to **984** in line with Jayachandran et al. (2017).
+
+```{r estimand, echo=TRUE}
+estimand <- declare_estimand(ATE = -984) # we are looking for reduced kW/h usage 
+estimand(po)
+```
+
+##declare_estimator()
+
+Next, we declare the estimators we use for recovering the estimand. While there are many advanced estimators, we'll focus on the two core experimental estimators:
+1. difference-in-means
+2. difference-in-differences
+
+```{r estimator, echo=TRUE}
+
+dim <- declare_estimator(Y ~ D, estimand = estimand,  
+          model =  difference_in_means, label = "DIM") #PH: Difference-in-means (Mean of treatment group - mean of control group)
+
+did <- declare_estimator(Y - kw_h ~ D, 
+                         estimand = estimand,  
+          model =  difference_in_means, label = "DID") #PH: Difference-in-differences ([Mean of treatment group @ endline - Mean of treatment group @ baseline] - [Mean of control group @ endline - mean of control group @ baseline])
+```
+
+
+##declare_design()
+
+This function brings all of the parts of the process together in a single design and allows for each part of the design to be simulated repeatedly.
+
+```{r design, echo=TRUE}
+design <- population + potential_outcomes + sampling +
+          assigning + revealing + estimand + dim + did
+```
+
+##diagnose_design()
+
+At this stage, we can calculate various features of the design that we have specified
+
+```{r diagnosis, cache=TRUE}
+diagnosis <- diagnose_design(design, sims=5000)
+diagnosis$diagnosands_df[,c(1,3,5,9,11)] %>%
+  kable()
+```
+
+
