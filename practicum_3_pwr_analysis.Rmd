@@ -29,7 +29,7 @@ population <- declare_population(
     kw_h=runif(n=N, min=600, max=13200), 
     u=rnorm(n=N, mean=10972, sd=0.1))
 )
-#and a different amount of variability in that KW hour usage throughout California(the variable 'u')
+#Variability in annual kw/h usage per household depending on climate throughout California (the variable 'u')
 ```
 
 ##Population descriptives
@@ -49,7 +49,7 @@ The next step is to declare the full schedule of potential outcomes $Y(1)$ and $
 potential_outcomes <- 
   declare_potential_outcomes(
     Y_D_0= kw_h + u,
-    Y_D_1=kw_h + u + 984)
+    Y_D_1=kw_h + u - 984)
 
 #PH: we are proposing that the unit-level treatment effect is a +984 (or 1642 - 658) kW/h usage/year.
 ```
@@ -87,13 +87,13 @@ assigned <- assigning(sam) # keep the results
 kable(assigned[1:5,c(1:2,4:5,7:8)], 
       digits = 1)
 
-#PH: alright, now we're using DeclareDesign to randomly assign villages to treatment and control with a probability of 0.5. The variable 'm' denotes the number of units that declare_assignment() should place in each treatment condition, which we are asking to be equal to half of the sample per treatment condition (nrow(sam)/2).
+#PH: alright, now we're using DeclareDesign to randomly assign households to treatment and control with a probability of 0.5. The variable 'm' denotes the number of units that declare_assignment() should place in each treatment condition, which we are asking to be equal to half of the sample per treatment condition (nrow(sam)/2).
 
 ```
 
 ## Assessing balance
 
-At this stage, it's possible to look at balance in the baseline tree cover characteristics, since random assignment has occured.
+At this stage, it's possible to look at balance in the baseline kw/h annual usage, since random assignment has occured.
 
 ```{r violin, echo=FALSE, fig.height=6}
 ggplot(data=assigned, aes(x=as.factor(D), y=kw_h)) +
@@ -157,4 +157,27 @@ diagnosis$diagnosands_df[,c(1,3,5,9,11)] %>%
   kable()
 ```
 
+## Looking under the hood, DIM
+
+```{r underhood-dim, height=6}
+sim.out <- diagnosis$simulations
+hist(sim.out$estimate[sim.out$estimator_label=="DIM"],
+     main="Randomization Distribution",
+     xlab="Estimates in Realized Experiments",
+     xlim=c(-60,70), cex=24)
+abline(v=5.5, lwd=3, col="red", add=T)
+```
+
+## Looking under the hood, DID
+
+```{r underhood-did, height=6}
+sim.out <- diagnosis$simulations
+hist(sim.out$estimate[sim.out$estimator_label=="DID"],
+     main="Randomization Distribution",
+     xlab="Estimates in Realized Experiments",
+     xlim=c(-60,70), cex=24)
+abline(v=5.5, lwd=3, col="red")
+
+#PH: note that we get more power using the difference in differences estimation. This is because diff-in-diff increases the precision of our estimate of the ATE.
+```
 
